@@ -97,7 +97,7 @@ FileInfo getFileInfo(int fd)
     ret.logicalSize = ss.st_size;
     // st_blocks is in "blocks" of 512, regardless of the actual st_blksize.
     ret.actualSize = ss.st_blocks * 512;
-    ret. blockSize = ss.st_blksize;
+    ret.blockSize = ss.st_blksize;
 
     return ret;
 }
