@@ -38,6 +38,9 @@ string toHuman(double bytes)
     import std.format;
     string prefix;
 
+    if (bytes == 0)
+        return "0";
+
     if (bytes >= giga) {
         bytes /= giga;
         prefix = "G";
@@ -63,6 +66,7 @@ unittest
     assert(toHuman(1024) == "1.0K");
     assert(toHuman(1024 * 5) == "5.0K");
     assert(toHuman(1024 * 11) == "11K");
+    assert(toHuman(0) == "0");
 }
 
 /// Opens a Posix file descriptor in read-only mode
