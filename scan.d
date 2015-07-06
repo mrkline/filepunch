@@ -1,8 +1,11 @@
 module filepunch.scan;
 
 import std.algorithm;
-import std.file : dirEntries, SpanMode;
+import std.c.stdlib : exit;
+import std.conv : to;
+import std.file;
 import std.stdio;
+import std.getopt;
 
 import core.sys.posix.unistd : close;
 
@@ -10,6 +13,25 @@ import filepunch.file;
 
 int main(string[] args)
 {
+    bool machine;
+    bool recursive;
+
+    try {
+        getopt(args,
+            config.caseSensitive,
+            config.bundling,
+            "help|h", { writeln(helpText); exit(0); },
+            "version|v", { writeln(versionText); exit(0); },
+            "machine|m", &machine,
+            "recursive|r", &recursive
+            );
+    }
+    catch (GetOptException e) {
+        stderr.writeln(e.msg);
+        stderr.writeln("See scan --help for more information.");
+        exit(1);
+    }
+
      auto names =
         dirEntries(".", SpanMode.shallow, false)
         .filter!(de => de.isFile)
@@ -22,15 +44,25 @@ int main(string[] args)
         auto info = getFileInfo(fd);
 
         // Write this stuff before we go through the file in case that explodes.
-        write(name, " could save ");
+        write(name, machine ? " " : " could save ");
 
         auto zeroSpaceLengths = getZeroRuns(fd, info)
                                       .map!(zr => zr.length);
         const auto zeroSpace = reduce!((l1, l2) => l1 + l2)(0L, zeroSpaceLengths);
-        writeln(possibleSavings(info, zeroSpace).toHuman);
+
+        immutable possible = possibleSavings(info, zeroSpace);
+        writeln(machine ? possible.to!string : possible.toHuman);
     }
 
     return 0;
+}
+
+auto rangesTest(string filename)
+{
+    if (filename.isDir)
+        return dirEntries(filename, SpanMode.shallow, false);
+    else
+        return DirEntry(filename);
 }
 
 
@@ -46,3 +78,11 @@ size_t possibleSavings(const ref FileInfo fi, size_t zeroSpace)
     immutable optimal = pessimal - zeroSpace;
     return fi.actualSize <= optimal ? 0 : fi.actualSize - optimal;
 }
+
+string helpText = q"EOS
+EOS";
+
+string versionText = q"EOS
+filepunch, v 0.1
+by Matt Kline, 2015
+EOS";
