@@ -3,11 +3,12 @@ module filepunch.scan;
 import std.algorithm;
 import std.c.stdlib : exit;
 import std.conv : to;
-import std.file;
 import std.stdio;
 import std.getopt;
 
 import core.sys.posix.unistd : close;
+
+import argstopaths;
 
 import filepunch.file;
 
@@ -32,12 +33,7 @@ int main(string[] args)
         exit(1);
     }
 
-     auto names =
-        dirEntries(".", SpanMode.shallow, false)
-        .filter!(de => de.isFile)
-        .map!(de => de.name);
-
-    foreach (name; names) {
+    foreach (name; argsToPaths(args[1 .. $], recursive)) {
         auto fd = openToRead(name);
         scope(exit) close(fd);
 
@@ -56,15 +52,6 @@ int main(string[] args)
 
     return 0;
 }
-
-auto rangesTest(string filename)
-{
-    if (filename.isDir)
-        return dirEntries(filename, SpanMode.shallow, false);
-    else
-        return DirEntry(filename);
-}
-
 
 size_t pessimalSize(const ref FileInfo fi)
 {

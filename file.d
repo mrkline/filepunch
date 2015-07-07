@@ -210,7 +210,8 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
             assert(bb !is null);
             BlockResults ret;
             ret.amountRead = read(fd, &bb[0], bb.length);
-            enforce(ret.amountRead >= 0, "read() failed.");
+            enforce(ret.amountRead >= 0, "read() failed with errno " ~
+                                         errno.to!string);
             ret.isAllZeroes = all!(b => b == 0)(bb);
             return ret;
         }
