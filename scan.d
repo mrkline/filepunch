@@ -16,6 +16,7 @@ import filepunch.file;
 
 int main(string[] args)
 {
+    bool verbose;
     bool machine;
     bool recursive;
 
@@ -25,6 +26,7 @@ int main(string[] args)
             config.bundling,
             "help|h", { writeAndSucceed(helpText); },
             "version", { writeAndSucceed(versionText); },
+            "verbose|v", &verbose,
             "recursive|r", &recursive,
             "machine|m", &machine);
     }
@@ -38,22 +40,31 @@ int main(string[] args)
     if (args.empty)
         writeAndFail("No files provided");
 
+    real total = 0;
+
     foreach (name; argsToPaths(args, recursive)) {
         auto fd = openToRead(name);
         scope(exit) close(fd);
 
         auto info = getFileInfo(fd);
 
-        // Write this stuff before we go through the file in case that explodes.
-        write(name, machine ? " " : " could save ");
-
         auto zeroSpaceLengths = getZeroRuns(fd, info)
                                       .map!(zr => zr.length);
-        const auto zeroSpace = reduce!((l1, l2) => l1 + l2)(0L, zeroSpaceLengths);
+        immutable zeroSpace = reduce!((l1, l2) => l1 + l2)(0L, zeroSpaceLengths);
 
         immutable possible = possibleSavings(info, zeroSpace);
-        writeln(machine ? possible.to!string : possible.toHuman);
+        total += possible;
+
+        if (possible > 0 || verbose) {
+            writeln(name, machine ? " " : " could save ",
+                    machine ? possible.to!string : possible.toHuman);
+        }
+
     }
+    if (machine)
+        writeln(total);
+    else
+        writeln("Total possible savings: ", total.toHuman);
 
     return 0;
 }
