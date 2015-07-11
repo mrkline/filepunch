@@ -75,7 +75,6 @@ unittest
 int openToRead(string path)
 {
     auto fd = open(path.toStringz, O_RDONLY);
-    enforce(fd >= 0, "failed to open " ~ path);
     return fd;
 }
 

@@ -43,6 +43,10 @@ int main(string[] args)
 
     foreach (name; argsToPaths(args, recursive)) {
         auto fd = openToRead(name);
+        if (fd < 0) {
+            stderr.writeln("Could not open ", name, ", skipping");
+            continue;
+        }
         scope(exit) close(fd);
 
         auto info = getFileInfo(fd);
