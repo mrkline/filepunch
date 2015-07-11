@@ -1,7 +1,6 @@
 module filepunch.holescan;
 
 import std.algorithm;
-import std.c.stdlib : exit;
 import std.conv : to;
 import std.stdio;
 import std.getopt;
