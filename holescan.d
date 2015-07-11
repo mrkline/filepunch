@@ -2,9 +2,9 @@ module filepunch.holescan;
 
 import std.algorithm;
 import std.conv : to;
-import std.stdio;
 import std.getopt;
 import std.range : empty;
+import std.stdio;
 
 import core.sys.posix.unistd : close;
 
