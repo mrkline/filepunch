@@ -5,6 +5,7 @@ import std.conv : to;
 import std.getopt;
 import std.range : empty;
 import std.stdio;
+import std.typecons;
 
 import core.sys.posix.unistd : close;
 
@@ -41,25 +42,27 @@ int main(string[] args)
 
     real total = 0;
 
-    foreach (name; argsToPaths(args, recursive)) {
-        auto fd = openToRead(name);
-        if (fd < 0) {
-            stderr.writeln("Could not open ", name, ", skipping");
-            continue;
-        }
-        scope(exit) close(fd);
+    auto descriptorRange = argsToPaths(args, recursive)
+        // Open the file descriptor and tack it on
+        .map!(path => tuple!("path", "fd")(path, openToRead(path)))
+        // Filter out bad file descriptors and warn about them
+        .filter!(f => filterDescriptorsAndWarn(f.path, f.fd));
 
-        auto info = getFileInfo(fd);
 
-        auto zeroSpaceLengths = getZeroRuns(fd, info)
-                                      .map!(zr => zr.length);
+    foreach (file; descriptorRange) {
+        scope(exit) close(file.fd);
+
+        auto info = getFileInfo(file.fd);
+
+        auto zeroSpaceLengths = getZeroRuns(file.fd, info)
+            .map!(zr => zr.length);
         immutable zeroSpace = reduce!((l1, l2) => l1 + l2)(0L, zeroSpaceLengths);
 
         immutable possible = possibleSavings(info, zeroSpace);
         total += possible;
 
         if (possible > 0 || verbose) {
-            writeln(name, machine ? " " : " could save ",
+            writeln(file.path, machine ? " " : " could save ",
                     machine ? possible.to!string : possible.toHuman);
         }
 

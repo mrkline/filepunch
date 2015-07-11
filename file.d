@@ -2,7 +2,7 @@ module filepunch.file;
 
 import std.conv : to;
 import std.exception;
-import std.range : empty;
+import std.range;
 import std.string : toStringz;
 
 import core.sys.linux.errno;
@@ -71,15 +71,27 @@ unittest
     assert(toHuman(7) == "7");
 }
 
-/// Opens a Posix file descriptor in read-only mode
+/// Opens a Posix file descriptor in read-only mode,
+/// returning the path and the file descriptor
 int openToRead(string path)
 {
-    auto fd = open(path.toStringz, O_RDONLY);
-    return fd;
+    return open(path.toStringz, O_RDONLY);
 }
 
-/// Information about a file deduced from stat()
-/// that we care about
+/// Filter out bad file descriptors with the side-effect of warning users
+/// about them.
+bool filterDescriptorsAndWarn(string path, int fd)
+{
+    import std.stdio : stderr;
+
+    immutable ret = fd >= 0;
+    if (!ret)
+        stderr.writeln("Could not open ", path, ", skipping");
+
+    return ret;
+}
+
+/// Information about a file deduced from stat() that we care about
 struct FileInfo {
     /// The apparent size of the file
     size_t logicalSize;
@@ -111,10 +123,10 @@ struct ZeroRun {
     size_t length;
 }
 
+/// Returns a range of runs of zero bytes in a file
 auto getZeroRuns(int fd, const ref FileInfo fi)
 {
     import std.algorithm : all;
-    import std.range;
     import std.traits : ReturnType;
 
     // See readBlock() below
