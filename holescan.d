@@ -13,6 +13,7 @@ import argstopaths;
 import help;
 
 import filepunch.file;
+import filepunch.linuxio;
 
 int main(string[] args)
 {
@@ -73,24 +74,6 @@ int main(string[] args)
         writeln("Total possible savings: ", total.toHuman);
 
     return 0;
-}
-
-size_t pessimalSize(const ref FileInfo fi)
-{
-    // The largest the file could be is the max of its actual size or,
-    // if the file is sparse, its logical size rounded up to the nearest block.
-    return max(fi.logicalSize + (fi.blockSize - fi.logicalSize % fi.blockSize),
-               fi.actualSize);
-}
-
-size_t possibleSavings(const ref FileInfo fi, size_t zeroSpace)
-{
-    immutable pessimal = pessimalSize(fi);
-    immutable optimal = pessimal - zeroSpace; // The smallest it could be
-
-    // The amount of space we can save is the difference between the optimal
-    // size and the current (actual) size, provided that value is positive.
-    return fi.actualSize <= optimal ? 0 : fi.actualSize - optimal;
 }
 
 string helpText = q"EOS
