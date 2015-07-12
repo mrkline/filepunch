@@ -51,19 +51,6 @@ unittest
     assert(toHuman(7) == "7");
 }
 
-/// Filter out bad file descriptors with the side-effect of warning users
-/// about them.
-bool filterDescriptorsAndWarn(string path, int fd)
-{
-    import std.stdio : stderr;
-
-    immutable ret = fd >= 0;
-    if (!ret)
-        stderr.writeln("Could not open ", path, ", skipping");
-
-    return ret;
-}
-
 size_t pessimalSize(const ref FileInfo fi)
 {
     import std.algorithm : max;
