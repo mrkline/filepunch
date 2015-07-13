@@ -63,11 +63,9 @@ size_t pessimalSize(const ref FileInfo fi)
 
 size_t possibleSavings(const ref FileInfo fi, size_t zeroSpace)
 {
-    immutable pessimal = pessimalSize(fi);
-    immutable optimal = pessimal - zeroSpace; // The smallest it could be
+    immutable optimal = pessimalSize(fi) - zeroSpace; // The smallest it could be
 
     // The amount of space we can save is the difference between the optimal
-    // size and the current (actual) size, provided that value is positive.
+    // size and the current (actual) size, provided the value is positive.
     return fi.actualSize <= optimal ? 0 : fi.actualSize - optimal;
 }
-

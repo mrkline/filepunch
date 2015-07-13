@@ -9,10 +9,10 @@ InputRange!string argsToPaths(string[] paths, bool recursive)
     // Ignore paths that don't exist (see filterExisting)
     auto existingPaths = paths.filter!(p => filterExisting(p));
 
-    // The .save is so that we make a copy of the range, using the original
-    // for directories below. This does mean that we'll filter twice
-    // (and therefore stat that file on the filesystem multiple times),
-    // but that's a miniscule hit in comparison to the rest of the I/O
+    // The .save is so we make a copy of the range, using the original
+    // for directories below. This does mean we'll filter twice
+    // (and possibly stat the file on the filesystem multiple times),
+    // but it's a minuscule hit in comparison to the rest of the I/O
     // we'll be doing.
     auto files = existingPaths.save.filter!(p => p.isFile);
     auto dirs = existingPaths.filter!(p => p.isDir);

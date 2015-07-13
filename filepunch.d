@@ -58,15 +58,12 @@ int main(string[] args)
 
         auto info = getFileInfo(file.fd);
 
-        auto zeroRunLengths = getZeroRuns(file.fd, info)
+        auto zeroSpace = getZeroRuns(file.fd, info)
             // While we're calculating the size of all zero runs in the file,
             // punch them into holes.
             .tee!(zr => punchHole(file.fd, zr))
-            .map!(zr => zr.length);
-
-        // We need to seed reduce with 0, as it is possible that zeroRunLengths
-        // is an empty range (there are no empty blocks)
-        immutable zeroSpace = reduce!((l1, l2) => l1 + l2)(0L, zeroRunLengths);
+            .map!(zr => zr.length)
+            .sum;
 
         immutable saved = possibleSavings(info, zeroSpace);
         total += saved;

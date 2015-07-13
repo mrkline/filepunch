@@ -30,8 +30,6 @@ enum {
 
 } // end extern(C)
 
-/// Opens a Posix file descriptor in read-only mode,
-/// returning the path and the file descriptor
 int openToRead(string path)
 {
     return open(path.toStringz, O_RDONLY);
@@ -92,13 +90,31 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
     static struct BlockResults {
         /// The block contained no non-zero bytes
         bool isAllZeroes;
-        /// The amount read
-        /// (could be less than the block size if we hit EOF)
+        /// The amount read (could be less than the block size if we hit EOF)
         ReturnType!read amountRead;
     }
 
-    /// The Voldemort type that provides our range of ZeroRuns
+    /// The Voldemort type that acts as our range of ZeroRuns
     static struct PossibleHoleFinder {
+
+    private:
+        int fd; // file descriptor
+        ubyte[] bb; // block buffer
+        ZeroRun curr; // current item in the range
+
+        /// Reads one filesystem block of the file and checks if it was all 0.
+        BlockResults readBlock() {
+            assert(bb !is null);
+            BlockResults ret;
+            ret.amountRead = read(fd, &bb[0], bb.length); // Standard Posix read
+            enforce(ret.amountRead >= 0, "read() failed with errno " ~
+                                         errno.to!string);
+            ret.isAllZeroes = all!(b => b == 0)(bb);
+            return ret;
+        }
+
+    public:
+        // Constructor that takes the file descriptor and the block size
         this(int _fd, size_t bs) {
             fd = _fd;
             // Ideally, we'd use malloc and free here instead of bringing
@@ -107,7 +123,7 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
             // fun double deletes and the like.
             // TODO: Have std.algorithm ranges move, if possible.
             bb = new ubyte[bs];
-            popFront();
+            popFront(); // Bring up the first zero run
         }
 
         @property auto ref front() { return curr; }
@@ -115,9 +131,9 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
         void popFront()
         {
             enforce(!empty, "You cannot pop an empty range.");
-            BlockResults br;
 
             // Look for a block that is all zeroes (or stop at EOF)
+            BlockResults br;
             do {
                 br = readBlock();
             } while (br.amountRead > 0 && !br.isAllZeroes);
@@ -146,14 +162,14 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
                 curr.length += br.amountRead;
 
                 // We may be in a hole, and can drastically speed things up
-                // by jumping out of the hole
+                // by jumping out of the hole using lseek with SEEK_DATA
                 currentLocation = curr.start + curr.length;
+                immutable soughtLocation = lseek(fd, currentLocation, SEEK_DATA);
 
-                immutable saughtLocation = lseek(fd, currentLocation, SEEK_DATA);
-                // There is a very unlikely but possible chance that the rest
+                // There is a very unlikely but possible chance the rest
                 // of this file is one big hole, in which case lseek will fail
                 // with errno ENXIO
-                if (saughtLocation < 0) {
+                if (soughtLocation < 0) {
                     enforce(errno == ENXIO,
                             "Unknown failure of lseek(SEEK_DATA), errno " ~
                             errno.to!string);
@@ -162,35 +178,19 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
                     return;
                 }
 
-                // If we didn't skip over a hole, saught - current == 0,
+                // If we didn't skip over a hole, sought - current == 0,
                 // so there's no need to branch here.
-                curr.length += saughtLocation - currentLocation;
+                curr.length += soughtLocation - currentLocation;
             }
         }
 
         // Our buffer pointer doubles as an indicator if we've hit EOF
         // See the EOF condition in popFront()
         @property bool empty() { return bb is null; }
-
-    private:
-        int fd; // file descriptor
-        ubyte[] bb; // block buffer
-        ZeroRun curr; // current item in the range
-
-        /// Reads one filesystem block of the file and checks if it was all 0.
-        BlockResults readBlock() {
-            assert(bb !is null);
-            BlockResults ret;
-            ret.amountRead = read(fd, &bb[0], bb.length);
-            enforce(ret.amountRead >= 0, "read() failed with errno " ~
-                                         errno.to!string);
-            ret.isAllZeroes = all!(b => b == 0)(bb);
-            return ret;
-        }
     }
-    // Ensure that we have created an input range that returns ZeroRuns.
+    // Ensure we have created an input range which returns ZeroRuns.
     static assert(isInputRange!PossibleHoleFinder);
-    static assert(is(typeof(PossibleHoleFinder.front()) == ZeroRun));
+    static assert(is(ReturnType!(PossibleHoleFinder.front) == ZeroRun));
 
     return PossibleHoleFinder(fd, fi.blockSize);
 }
