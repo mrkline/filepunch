@@ -55,10 +55,12 @@ size_t pessimalSize(const ref FileInfo fi)
 {
     import std.algorithm : max;
 
-    // The largest the file could be is the max of its actual size or,
-    // if the file is sparse, its logical size rounded up to the nearest block.
-    return max(fi.logicalSize + (fi.blockSize - fi.logicalSize % fi.blockSize),
-               fi.actualSize);
+    // The largest the file could be is its logical size
+    // rounded up to the nearest block.
+    immutable pessimal  = fi.logicalSize +
+                          (fi.blockSize - fi.logicalSize % fi.blockSize);
+    assert(pessimal >= fi.actualSize);  // Sanity check
+    return pessimal;
 }
 
 size_t possibleSavings(const ref FileInfo fi, size_t zeroSpace)
