@@ -49,12 +49,12 @@ int main(string[] args)
 
 
     foreach (file; descriptorRange) {
-        scope(exit) close(file.fd);
-
         if (file.fd < 0) {
             stderr.writeln("Could not open ", file.path, ", skipping");
             continue;
         }
+
+        scope(exit) close(file.fd);
 
         auto info = getFileInfo(file.fd);
 
