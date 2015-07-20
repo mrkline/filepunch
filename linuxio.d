@@ -109,7 +109,7 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
             ret.amountRead = read(fd, &bb[0], bb.length); // Standard Posix read
             enforce(ret.amountRead >= 0, "read() failed with errno " ~
                                          errno.to!string);
-            ret.isAllZeroes = all!(b => b == 0)(bb);
+            ret.isAllZeroes = all!(b => b == 0)(bb[0 .. ret.amountRead]);
             return ret;
         }
 
