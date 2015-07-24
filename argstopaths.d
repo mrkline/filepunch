@@ -1,4 +1,5 @@
 import std.algorithm;
+import std.exception;
 import std.file;
 import std.range;
 import std.range.interfaces;
@@ -19,8 +20,11 @@ InputRange!string argsToPaths(string[] paths, bool recursive)
 
     if (recursive) {
         auto expandedDirs = dirs
-            .map!(p => dirEntries(p, SpanMode.depth, false)) // recurse into them
+            .map!(p => expandDirectory(p)) // recurse into them
             .joiner // Join these ranges into one contiguous one
+            .handle!(Exception, RangePrimitive.access | RangePrimitive.pop,
+                     (e, r) => DirEntry.init)
+            .filter!(de => de != de.init)
             .filter!(p => p.isFile) // We only want the files
             .map!(de => de.name); // Reduce from DirEntry back down to a string
 
@@ -55,5 +59,15 @@ bool filterExisting(string path)
     else {
         stderr.writeln(path, " does not exist");
         return false;
+    }
+}
+
+InputRange!DirEntry expandDirectory(string path)
+{
+    try {
+        return inputRangeObject(dirEntries(path, SpanMode.depth, false));
+    }
+    catch (Exception ex) {
+        return inputRangeObject(only(DirEntry.init));
     }
 }
