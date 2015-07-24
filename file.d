@@ -51,7 +51,7 @@ unittest
     assert(toHuman(7) == "7");
 }
 
-size_t pessimalSize(const ref FileInfo fi)
+ulong pessimalSize(const ref FileInfo fi)
 {
     import std.algorithm : max;
 
@@ -63,7 +63,7 @@ size_t pessimalSize(const ref FileInfo fi)
     return pessimal;
 }
 
-size_t possibleSavings(const ref FileInfo fi, size_t zeroSpace)
+ulong possibleSavings(const ref FileInfo fi, ulong zeroSpace)
 {
     immutable optimal = pessimalSize(fi) - zeroSpace; // The smallest it could be
 

@@ -43,11 +43,11 @@ int openToReadAndWrite(string path)
 /// Information about a file deduced from stat() that we care about
 struct FileInfo {
     /// The apparent size of the file
-    size_t logicalSize;
+    ulong logicalSize;
     /// The actual, on-disk size of the file (in multiples of block size)
-    size_t actualSize;
+    ulong actualSize;
     /// The size of the filesystem blocks for this file
-    size_t blockSize;
+    ulong blockSize;
 }
 
 FileInfo getFileInfo(int fd)
@@ -67,9 +67,9 @@ FileInfo getFileInfo(int fd)
 /// A run of zero bytes in a file
 struct ZeroRun {
     /// The offset in bytes from the start of the file
-    size_t start;
+    ulong start;
     /// Length of the run, in bytes
-    size_t length;
+    ulong length;
 }
 
 void punchHole(int fd, ZeroRun run)
@@ -115,7 +115,7 @@ auto getZeroRuns(int fd, const ref FileInfo fi)
 
     public:
         // Constructor that takes the file descriptor and the block size
-        this(int _fd, size_t bs) {
+        this(int _fd, ulong bs) {
             fd = _fd;
             // Ideally, we'd use malloc and free here instead of bringing
             // the GC into this, but some of the std.algorithm ranges
