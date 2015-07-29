@@ -21,6 +21,7 @@ InputRange!string argsToPaths(string[] paths, bool recursive)
     if (recursive) {
         auto expandedDirs = dirs
             .map!(p => expandDirectory(p)) // recurse into them
+            .cache() // Don't evaluate the above mapping several times
             .joiner // Join these ranges into one contiguous one
             .handle!(Exception, RangePrimitive.access | RangePrimitive.pop,
                      (e, r) => DirEntry.init)
@@ -50,7 +51,7 @@ bool filterExisting(string path)
 
         auto de = DirEntry(path);
         if (!de.isFile && !de.isDir) {
-            stderr.writeln("ignoring special file", path);
+            stderr.writeln("ignoring special file ", path);
             return false;
         }
 
@@ -68,6 +69,7 @@ InputRange!DirEntry expandDirectory(string path)
         return inputRangeObject(dirEntries(path, SpanMode.depth, false));
     }
     catch (Exception ex) {
+        stderr.writeln("Could not open directory ", path, ", skipping");
         return inputRangeObject(only(DirEntry.init));
     }
 }

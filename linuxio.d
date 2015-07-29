@@ -40,6 +40,19 @@ int openToReadAndWrite(string path)
     return open(path.toStringz, O_RDWR);
 }
 
+/// Filter out bad file descriptors with the side effect of warning users
+/// about them.
+bool filterDescriptorsAndWarn(string path, int fd)
+{
+    import std.stdio : stderr;
+
+    immutable ret = fd >= 0;
+    if (!ret)
+        stderr.writeln("Could not open ", path, ", skipping");
+
+    return ret;
+}
+
 /// Information about a file deduced from stat() that we care about
 struct FileInfo {
     /// The apparent size of the file

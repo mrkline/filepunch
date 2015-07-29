@@ -45,15 +45,14 @@ int main(string[] args)
 
     auto descriptorRange = argsToPaths(args, recursive)
         // Open the file descriptor and tack it on
-        .map!(path => tuple!("path", "fd")(path, openToReadAndWrite(path)));
+        .map!(path => tuple!("path", "fd")(path, openToReadAndWrite(path)))
+        // Don't run the above mapping more than once per path
+        .cache()
+        // Filter out bad file descriptors and warn about them
+        .filter!(f => filterDescriptorsAndWarn(f.path, f.fd));
 
 
     foreach (file; descriptorRange) {
-        if (file.fd < 0) {
-            stderr.writeln("Could not open ", file.path, ", skipping");
-            continue;
-        }
-
         scope(exit) close(file.fd);
 
         auto info = getFileInfo(file.fd);
@@ -72,7 +71,6 @@ int main(string[] args)
             writeln(file.path, machine ? " " : " saved ",
                     machine ? saved.to!string : saved.toHuman);
         }
-
     }
     if (machine)
         writeln(total);
