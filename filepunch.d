@@ -57,6 +57,8 @@ int main(string[] args)
 
         auto info = getFileInfo(file.fd);
 
+        immutable preSize = info.actualSize;
+
         auto zeroSpace = getZeroRuns(file.fd, info)
             // While we're calculating the size of all zero runs in the file,
             // punch them into holes.
@@ -64,12 +66,27 @@ int main(string[] args)
             .map!(zr => zr.length)
             .sum;
 
-        immutable saved = possibleSavings(info, zeroSpace);
-        total += saved;
+        // possibleSavings() is just an estimate.
+        // Just stat the file again instead.
+        immutable postSize = getFileInfo(file.fd).actualSize;
 
-        if (saved > 0 || verbose) {
-            writeln(file.path, machine ? " " : " saved ",
-                    machine ? saved.to!string : saved.toHuman);
+        if (postSize > preSize) {
+            immutable lost = postSize - preSize;
+            total -= lost;
+
+            stderr.writeln("Warning: size of ", file.path,
+                           " increased by ", lost.toHuman,
+                           " (before: ", preSize.toHuman,
+                           " after: ", postSize.toHuman, ")");
+        }
+        else {
+            immutable saved = preSize - postSize;
+            total += saved;
+
+            if (saved > 0 || verbose) {
+                writeln(file.path, machine ? " " : " saved ",
+                        machine ? saved.to!string : saved.toHuman);
+            }
         }
     }
     if (machine)

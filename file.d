@@ -55,17 +55,24 @@ ulong pessimalSize(const ref FileInfo fi)
 {
     import std.algorithm : max;
 
-    // The largest the file could be is its logical size
-    // rounded up to the nearest block.
-    immutable pessimal  = fi.logicalSize +
-                          (fi.blockSize - fi.logicalSize % fi.blockSize);
-    assert(pessimal >= fi.actualSize);  // Sanity check
-    return pessimal;
+    // Round the logical size up to the nearest block
+
+    immutable modBlock = fi.logicalSize % fi.blockSize;
+    ulong pessimal = fi.logicalSize;
+    // Make sure the modulo result isn't 0, otherwise we'd just be adding
+    // another full block.
+    if (modBlock != 0) pessimal += fi.blockSize - modBlock;
+
+    // In some cases (I have no idea why),
+    // the actual size can be larger than the logical rounded up.
+    return max(pessimal, fi.actualSize);
 }
 
 ulong possibleSavings(const ref FileInfo fi, ulong zeroSpace)
 {
-    immutable optimal = pessimalSize(fi) - zeroSpace; // The smallest it could be
+    if (zeroSpace == 0) return 0;
+
+    immutable optimal = pessimalSize(fi) - zeroSpace;
 
     // The amount of space we can save is the difference between the optimal
     // size and the current (actual) size, provided the value is positive.
