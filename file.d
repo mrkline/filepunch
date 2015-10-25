@@ -51,6 +51,7 @@ unittest
     assert(toHuman(7) == "7");
 }
 
+pure
 ulong pessimalSize(const ref FileInfo fi)
 {
     import std.algorithm : max;
@@ -68,6 +69,7 @@ ulong pessimalSize(const ref FileInfo fi)
     return max(pessimal, fi.actualSize);
 }
 
+pure
 ulong possibleSavings(const ref FileInfo fi, ulong zeroSpace)
 {
     if (zeroSpace == 0) return 0;
