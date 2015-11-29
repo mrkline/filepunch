@@ -71,13 +71,11 @@ int main(string[] args)
         immutable postSize = getFileInfo(file.fd).actualSize;
 
         if (postSize > preSize) {
-            immutable lost = postSize - preSize;
-            total -= lost;
-
-            stderr.writeln("Warning: size of ", file.path,
-                           " increased by ", lost.toHuman,
-                           " (before: ", preSize.toHuman,
-                           " after: ", postSize.toHuman, ")");
+            /* Tests indicate that though files can seem to get larger,
+             * the additional size usually goes away after the file has actually
+             * been sunk to disk.
+             * Filesystems are odd.
+             */
         }
         else {
             immutable saved = preSize - postSize;
